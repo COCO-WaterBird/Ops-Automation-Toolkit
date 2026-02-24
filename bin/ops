@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+
+# 让 python 能找到 src/
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export PYTHONPATH="${REPO_ROOT}:${REPO_ROOT}/src:${PYTHONPATH}"
+
+python -m src.cli "$@"
