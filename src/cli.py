@@ -49,7 +49,11 @@
 import argparse
 from pathlib import Path
 
-from src.image.convert import convert_folder
+from src.image.convert import (
+    convert_folder,
+    convert_folder_to_webp_276x143,
+    convert_folder_to_webp_fixed,
+)
 from src.image.resize import process_folder
 
 
@@ -86,6 +90,24 @@ def cmd_process(args):
     if tmp_dir.exists():
         tmp_dir.rmdir()
 
+def cmd_webp_276x143(args):
+    convert_folder_to_webp_276x143(
+        input_dir=Path(args.input),
+        output_dir=Path(args.output),
+        quality=args.quality,
+        skip_svg=args.skip_svg,
+    )
+
+def cmd_webp_fixed(args):
+    convert_folder_to_webp_fixed(
+        input_dir=Path(args.input),
+        output_dir=Path(args.output),
+        width=args.width,
+        height=args.height,
+        quality=args.quality,
+        skip_svg=args.skip_svg,
+    )
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -102,7 +124,7 @@ def build_parser() -> argparse.ArgumentParser:
     def add_io_args(p, default_output: str):
         p.add_argument("--input",   required=True,        help="Input folder path")
         p.add_argument("--output",  default=default_output, help="Output folder path")
-        p.add_argument("--quality", type=int, default=85, help="JPG quality (1-95, default: 85)")
+        p.add_argument("--quality", type=int, default=85, help="Quality (1-95, default: 85)")
 
     # ops image convert
     p_convert = image_sub.add_parser("convert", help="Batch convert images to JPG")
@@ -118,6 +140,33 @@ def build_parser() -> argparse.ArgumentParser:
     p_process = image_sub.add_parser("process", help="Convert + resize in one step")
     add_io_args(p_process, "output")
     p_process.set_defaults(func=cmd_process)
+
+    # ops image webp-276x143
+    p_webp = image_sub.add_parser("webp-276x143", help="Convert images to WebP(276x143)")
+    add_io_args(p_webp, "output/webp-276x143")
+    p_webp.add_argument(
+        "--skip-svg",
+        action="store_true",
+        help="Skip .svg files (useful if system cairo libs are not installed).",
+    )
+    p_webp.set_defaults(func=cmd_webp_276x143)
+
+    # ops image webp-fixed
+    p_webp_fixed = image_sub.add_parser(
+        "webp-fixed",
+        help="Convert images to WebP with fixed size (--width/--height)",
+    )
+    p_webp_fixed.add_argument("--input", required=True, help="Input folder path")
+    p_webp_fixed.add_argument("--output", default="output/webp-fixed", help="Output folder path")
+    p_webp_fixed.add_argument("--width", type=int, required=True, help="Output width (px)")
+    p_webp_fixed.add_argument("--height", type=int, required=True, help="Output height (px)")
+    p_webp_fixed.add_argument("--quality", type=int, default=85, help="WebP quality (1-95, default: 85)")
+    p_webp_fixed.add_argument(
+        "--skip-svg",
+        action="store_true",
+        help="Skip .svg files (useful if system cairo libs are not installed).",
+    )
+    p_webp_fixed.set_defaults(func=cmd_webp_fixed)
 
     return parser
 
