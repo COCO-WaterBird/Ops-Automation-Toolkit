@@ -49,15 +49,12 @@
 import argparse
 from pathlib import Path
 
-from src.image.convert import (
-    convert_folder,
-    convert_folder_to_webp_276x143,
-    convert_folder_to_webp_fixed,
-)
-from src.image.resize import process_folder
+from src.image.merge import cmd_merge
 
 
 def cmd_convert(args):
+    from src.image.convert import convert_folder
+
     convert_folder(
         input_dir=Path(args.input),
         output_dir=Path(args.output),
@@ -66,6 +63,8 @@ def cmd_convert(args):
 
 
 def cmd_resize(args):
+    from src.image.resize import process_folder
+
     process_folder(
         input_dir=Path(args.input),
         output_root=Path(args.output),
@@ -74,6 +73,9 @@ def cmd_resize(args):
 
 def cmd_process(args):
     """Convert then resize in one step."""
+    from src.image.convert import convert_folder
+    from src.image.resize import process_folder
+
     input_dir = Path(args.input)
     output_dir = Path(args.output)
     tmp_dir = output_dir / "_converted"
@@ -91,6 +93,8 @@ def cmd_process(args):
         tmp_dir.rmdir()
 
 def cmd_webp_276x143(args):
+    from src.image.convert import convert_folder_to_webp_276x143
+
     convert_folder_to_webp_276x143(
         input_dir=Path(args.input),
         output_dir=Path(args.output),
@@ -99,6 +103,8 @@ def cmd_webp_276x143(args):
     )
 
 def cmd_webp_fixed(args):
+    from src.image.convert import convert_folder_to_webp_fixed
+
     convert_folder_to_webp_fixed(
         input_dir=Path(args.input),
         output_dir=Path(args.output),
@@ -167,6 +173,52 @@ def build_parser() -> argparse.ArgumentParser:
         help="Skip .svg files (useful if system cairo libs are not installed).",
     )
     p_webp_fixed.set_defaults(func=cmd_webp_fixed)
+
+    # ops image merge — flatten photos from folder trees and/or zip directories
+    p_merge = image_sub.add_parser(
+        "merge",
+        help="Merge photos from --tree dirs and/or --zips dirs into one new folder",
+    )
+    p_merge.add_argument(
+        "--tree",
+        action="append",
+        default=[],
+        metavar="DIR",
+        help="Directory scanned recursively for images (repeatable)",
+    )
+    p_merge.add_argument(
+        "--zips",
+        action="append",
+        default=[],
+        metavar="DIR",
+        help="Mixed root: images in subfolders plus every .zip under it (any depth); each zip is extracted (repeatable)",
+    )
+    p_merge.add_argument(
+        "--output-parent",
+        required=True,
+        help="Parent folder where the new folder --name will be created",
+    )
+    p_merge.add_argument(
+        "--name",
+        required=True,
+        help="Name of the new folder (created under --output-parent)",
+    )
+    p_merge.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Only report how many images would be copied; do not write files",
+    )
+    p_merge.add_argument(
+        "--extensions",
+        default="",
+        help="Comma-separated extensions to include (default: common raster types)",
+    )
+    p_merge.add_argument(
+        "--dedupe-content",
+        action="store_true",
+        help="Skip images with identical file bytes (SHA-256); first occurrence wins",
+    )
+    p_merge.set_defaults(func=cmd_merge)
 
     return parser
 
